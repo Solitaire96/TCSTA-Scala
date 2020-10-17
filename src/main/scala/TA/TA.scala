@@ -1,34 +1,39 @@
 package TA
 
+import TCN._
+
 class TA {
+  var states = Map[String, State]()
+  // map states to transition in adjacency list form
+  var adj = Map[String, List[Transition]]()
+
+  var init = ""
+
+  override def toString: String = this.states.values + "\n" + this.adj.toSeq + "\n"
+
+  def addState(label: String, inv: Option[Invariant] = None): Unit = {
+    val st = new State(label, inv)
+    this.states += (label -> st)
+  }
+
+  def addTransition(source: String, dest: String, guard: Option[Invariant] = None): Unit = {
+    val ts = new Transition(source, dest, guard)
+    if (!this.adj.contains(source)) this.adj += source -> List()
+    for (transitions <- this.adj.get(source)) this.adj += source -> (ts :: transitions)
+  }
+
+  def setInit(init: String): Unit = {
+    for(state <- this.states.get(init)) {
+      state.setReset(0)
+      this.init = init
+    }
+  }
+
+  def toTCN(): Unit = {
+    val tcn = new TCN()
+  }
 
 }
-
-class TimedAutomaton:
-
-def __init__(self):
-# map state labels to states
-self.states = {}
-
-# map states to transition in adjacency list form
-self.adj = {}
-
-def __str__(self):
-return str(self.states.values()) + "\n" + str(self.adj.items()) + "\n"
-
-def addState(self, label, inv = None):
-s = State(label, inv)
-self.states[label] = s
-
-def addTransition(self, source, dest, guard = None):
-ts = Transition(source, dest, guard)
-if self.adj.get(source) is None:
-self.adj[source] = []
-self.adj[source].append(ts)
-
-def setInit(self, init):
-self.init = init
-self.states[init].reset = 0
 
 def toTCN(self):
 tcn = TCN()
