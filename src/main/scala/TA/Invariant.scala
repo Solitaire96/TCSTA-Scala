@@ -9,11 +9,12 @@ class Invariant(clock: String, rel: String, const: Double) {
 
   override def toString: String = this.clock + this.rel + this.const
 
-  def toConstraint(): Unit = rel match {
-    case "<" => new Constraint(0, const - Constraint.epsilon)
-    case "<=" => new Constraint(0, const)
-    case ">" => new Constraint(const + Constraint.epsilon, Constraint.inf)
-    case ">=" => new Constraint(const, Constraint.inf)
-  }
+  def toConstraint() = rel match {
+      case "<" => new Constraint(0, const - Constraint.epsilon)
+      case "<=" => new Constraint(0, const)
+      case ">" => new Constraint(const + Constraint.epsilon, Constraint.inf)
+      case ">=" => new Constraint(const, Constraint.inf)
+    }
+
 
 }

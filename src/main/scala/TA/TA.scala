@@ -29,69 +29,72 @@ class TA {
     }
   }
 
-  def toTCN(): Unit = {
+  def toTCN() = {
     val tcn = new TCN()
+
+    // add states and abstract out invariants
+    for((label, state) <- this.states.toSeq) {
+      val stateBegin = label + "-b"
+      val stateEnd = label + "-e"
+
+      tcn.addEvent(stateBegin)
+      tcn.addEvent(stateEnd)
+
+      if(state.inv.isDefined) tcn.addEdge(stateBegin, stateEnd, state.inv.get.toConstraint(), true)
+      else tcn.addEdge(stateBegin, stateEnd, new Constraint(0, Constraint.inf), true)
+
+    }
+
+    // set initial state
+    tcn.setInit(this.init + "-b")
+
+    // add edges with guards->constraints
+
+    for(origin <- this.adj.values; transition <- origin) {
+      val source = transition.source + "-e"
+      val dest = transition.dest + "-b"
+
+      if (transition.guard.isDefined) tcn.addEdge(source, dest, transition.guard.get.toConstraint(), true)
+      else tcn.addEdge(source, dest, new Constraint(0, 0), true)
+
+
+    }
+
+    // perform topological sorting of events
+    val sort = tcn.topSort()
+
+    // gather the clock resets in topological order
+    var clockResets = List[(String, Int)]()
+    var currentReset = (tcn.init,0)
+
+    for(event <- sort; (label, state) <- this.states.toSeq) {
+      if (label + "-b" == event && state.reset.isDefined) currentReset = (event, state.reset.get)
+      clockResets = currentReset :: clockResets
+    }
+
+    // replace constrained edges with adjusted constrained edges
+
+    for((event, (resetState, reset)) <- sort.zip(clockResets);
+        edge <- tcn.events(event);
+        if (edge.constr.isDefined && !edge.constr.get.isTrivialConstraint)) {
+      tcn.removeEdge(edge.source, edge.dest)
+      tcn.addEdge(resetState, edge.dest, edge.constr.get.getTimeAdjustedConstraint(reset), resetState == edge.source)
+
+      // this step needs to be added to algo description
+
+      // check if the two
+      if(resetState != edge.source) {
+        if(edge.source.substring(0, edge.source.length - 2) == edge.dest.substring(0, edge.dest.length - 2))
+          tcn.addEdge(edge.source, edge.dest, new Constraint(0, Constraint.inf), true)
+        else
+          tcn.addEdge(edge.source, edge.dest, new Constraint(0, 0), true)
+      }
+
+    }
+
+    tcn
   }
 
+
+
 }
-
-def toTCN(self):
-tcn = TCN()
-
-# add states and abtract out invariants
-for label, state in self.states.items():
-stateB = label + "-b"
-stateE = label + "-e"
-
-tcn.addEvent(stateB)
-tcn.addEvent(stateE)
-if(state.inv is not None):
-tcn.addEdge(stateB, stateE, state.inv.toConstraint(), True)
-else:
-tcn.addEdge(stateB, stateE, Constraint(0, Constraint.inf), True)
-
-# set initial state
-tcn.setInit(self.init + "-b")
-
-# add edges with guards->constraints
-for origin in self.adj.values():
-for transition in origin:
-source = transition.source + "-e"
-dest = transition.dest + "-b"
-
-if transition.guard is not None:
-tcn.addEdge(source, dest, transition.guard.toConstraint(), True)
-else:
-tcn.addEdge(source, dest, Constraint(0, 0), True)
-
-# perform topological sorting of events
-sort = tcn.topSort()
-
-# gather the clock resets in topological order
-clockResets = []
-currentReset = (tcn.init,0)
-
-for event in sort:
-for label, state in self.states.items():
-if label + "-b" == event and state.reset is not None:
-currentReset = (event, state.reset)
-clockResets.append(currentReset)
-
-# replace constrained edges with adjusted constrained edges
-
-for event, (resetState, reset) in zip(sort, clockResets):
-for edge in tcn.events[event]:
-if not edge.constr.isTrivialConstraint():
-tcn.removeEdge(edge.source, edge.dest)
-tcn.addEdge(resetState, edge.dest, edge.constr.getTimeAdjustedConstraint(reset), resetState == edge.source)
-
-# this step needs to be added to algo description
-
-#check if the two
-if not resetState == edge.source:
-if edge.source[:-2] == edge.dest[:-2]:
-tcn.addEdge(edge.source, edge.dest, Constraint(0, Constraint.inf), True)
-else:
-tcn.addEdge(edge.source, edge.dest, Constraint(0, 0), True)
-
-return tcn
