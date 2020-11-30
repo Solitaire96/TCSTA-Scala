@@ -1,8 +1,26 @@
-package TA
+package ta.singleClock
 
-import TCN._
+import tcn._
 
-class TA {
+object TA {
+  def fromLists(states : List[State], transitions : List[Transition]) : TA = {
+    val ta = new TA()
+
+    for(state <- states) {
+      ta.addState(state.label,state.inv, state.reset)
+    }
+
+    for(transition <- transitions) {
+      ta.addTransition(transition.source, transition.dest, transition.guard)
+    }
+
+    ta.setInit(states.head.label)
+
+    ta
+  }
+}
+
+class TA extends ta.TA {
   var states = Map[String, State]()
   // map states to transition in adjacency list form
   var adj = Map[String, List[Transition]]()
@@ -11,12 +29,13 @@ class TA {
 
   override def toString: String = this.states.values + "\n" + this.adj.toSeq + "\n"
 
-  def addState(label: String, inv: Option[Invariant] = None): Unit = {
-    val st = new State(label, inv)
+  // allow user to add state with reset
+  def addState(label: String, inv: Option[ta.Invariant] = None, reset: Option[Int] = None): Unit = {
+    val st = new State(label, inv, reset)
     this.states += (label -> st)
   }
 
-  def addTransition(source: String, dest: String, guard: Option[Invariant] = None): Unit = {
+  def addTransition(source: String, dest: String, guard: Option[ta.Invariant] = None): Unit = {
     val ts = new Transition(source, dest, guard)
     if (!this.adj.contains(source)) this.adj += source -> List()
     for (transitions <- this.adj.get(source)) this.adj += source -> (ts :: transitions)
@@ -94,7 +113,5 @@ class TA {
 
     tcn
   }
-
-
 
 }

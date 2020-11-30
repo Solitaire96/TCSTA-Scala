@@ -1,4 +1,4 @@
-package TCN
+package tcn
 
 class Constraint(val lower : Double = 0, val upper : Double = Double.PositiveInfinity) {
   def isTrivialConstraint = this.lower == 0 && (this.upper == 0 || this.upper.isInfinity)

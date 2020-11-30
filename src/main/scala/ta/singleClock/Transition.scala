@@ -1,8 +1,6 @@
-package TA
+package ta.singleClock
 
-import TCN._
-
-class Transition(val source : String, val dest : String, val guard: Option[Invariant] = None) {
+class Transition(val source : String, val dest : String, val guard: Option[ta.Invariant] = None) extends ta.Transition {
   // guard is an Invariant representing the guard condition
   // source is the originating state
   // dest is the destination state

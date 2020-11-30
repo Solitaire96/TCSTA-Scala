@@ -1,9 +1,8 @@
-package TA
+package ta.singleClock
 
-class State(var label: String, var inv: Option[Invariant] = None, var reset: Option[Integer] = None) {
+class State(var label: String, var inv: Option[ta.Invariant] = None, var reset: Option[Int] = None) extends ta.State {
   // inv is an Invariant representing the invariant condition
-
-  def setReset(reset: Integer) = this.reset = Some(reset)
+  def setReset(reset: Int) = this.reset = Some(reset)
 
   override def toString: String = {
     val str = "(%s%s%s)"

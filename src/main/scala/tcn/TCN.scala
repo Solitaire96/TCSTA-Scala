@@ -1,4 +1,4 @@
-package TCN
+package tcn
 
 import scala.collection.mutable._
 
@@ -80,7 +80,7 @@ class TCN {
     //for dest in self.events.keys():
     //paths[(source, dest)] = self.getFullPath(source, dest)
 
-    return None
+    //return None
 
   }
 

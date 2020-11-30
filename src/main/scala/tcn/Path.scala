@@ -1,4 +1,4 @@
-package TCN
+package tcn
 
 // Refactor this class to be immutable
 
