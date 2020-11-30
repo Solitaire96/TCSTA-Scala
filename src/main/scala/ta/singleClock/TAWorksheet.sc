@@ -38,20 +38,7 @@ val sim = new SimulateTA(ta, createRun(List("a", "b", "c"), List(10, 3)))
 
 import org.scalacheck.Gen
 
-val alphabet = ('a' to 'z').toList
 
-val constrGen : Gen[Option[Invariant]] = for( pred <- Gen.oneOf("<", "<=", ">", ">=");
-                  const <- Gen.choose(1, 20))
-  yield Some(new Invariant("x", pred, const))
-
-val stateGen = for(loc <- Gen.oneOf(alphabet);
-                   constr <- constrGen;
-                   invar <- Gen.oneOf(None, constr);
-                   resetVal  <- Gen.choose(2, 8);
-                   reset <- Gen.oneOf(None, None, Some(resetVal))
-  //(source, dest) <- locs.zip(locs.tail)
-                   )
-yield(new State(loc.toString, invar, reset))
 
 
 /*
@@ -81,48 +68,85 @@ val transGen = for(states <- stateGen;
   //}
   //yield(new State(loc.toString, invar, None))
 
+val numTrials = 5000
+val taSize = 12
+var counter = 0
 
-val length = 5
+var propertyHolds = true
+
+val constrGen : Gen[Option[Invariant]] = for( pred <- Gen.oneOf("<", "<=", ">", ">=");
+                                              const <- Gen.choose(1, 20))
+  yield Some(new Invariant("x", pred, const))
+
+for(i <- 1 to numTrials) {
+  val alphabet = ('a' to 'z').toList.toIterator
+
+  val stateGen = for(constr <- constrGen;
+                     invar <- Gen.oneOf(None, constr);
+                     resetVal  <- Gen.choose(2, 8);
+                     reset <- Gen.oneOf(None, None, Some(resetVal))
+                     )
+    yield(new State(alphabet.next().toString, invar, reset))
+
+  val states = List.tabulate(taSize)(_ => stateGen.sample.get).sortWith( (a,b) => a.label < b.label)
+
+  val genTransitions = (source : String, dest : String) => for(
+    constr <- constrGen;
+    invar <- Gen.oneOf(None, constr, constr)
+  ) yield (new Transition(source, dest, invar))
 
 
-val states = List.tabulate(length)(_ => stateGen.sample.get).sortWith( (a,b) => a.label < b.label)
+  val labels = states.map(_.label)
+  val transitions = labels.zip(labels.tail).map(x => genTransitions(x._1, x._2).sample.get)
+  val ta = TA.fromLists(states, transitions)
 
 
 
+  var solution : Option[Run] = None
 
-val labels = states.map(_.label)
+  for(i <- 1 to 10000) {
+    val deltas = List.tabulate(taSize - 1)(_ => Gen.choose(1, 10).sample.get)
+    val run = createRun(labels, deltas)
+    val sim = new SimulateTA(ta, run)
+    val result = sim.simulate()
+    if (result) {
+      solution = Some(run)
+    }
+  }
 
-//(source, dest) <- ;
+  for(run <- solution) {
+    //println("found a run!")
+    //println(run)
 
-val genTransitions = (source : String, dest : String) => for(
-                     constr <- constrGen;
-                     invar <- Gen.oneOf(None, constr, constr)
-                     ) yield (new Transition(source, dest, invar))
-
-
-
-val transitions = labels.zip(labels.tail).map(x => genTransitions(x._1, x._2).sample.get)
-
-//val transitions = List[Transition]()
-
-val ta = TA.fromLists(states, transitions)
-
-var solution : Option[Run] = None
-
-for(i <- 1 to 1000) {
-  val deltas = List.tabulate(length - 1)(_ => Gen.choose(0, 10).sample.get)
-  val run = createRun(labels, deltas)
-  val sim = new SimulateTA(ta, run)
-  val result = sim.simulate()
-  if (result) {
-    solution = Some(run)
+    val tcn = ta.toTCN()
+    propertyHolds &= tcn.isConsistent()
+    counter += 1
+    //println(tcn)
+    //println("TCN is consistent: ")
   }
 }
 
-for(run <- solution) {
-  println("found a run!")
-  println(run)
-}
+println("property is " + propertyHolds + " across " + counter + " ta")
+
+
+
+/*
+val ta = new TA()
+ta.addState("a", Some(new Invariant("x", "<", 15)))
+ta.addState("b", Some(new Invariant("x", "<", 7)))
+ta.states("b").setReset(4)
+ta.addState("c", Some(new Invariant("x", "<", 10)))
+ta.addTransition("a", "b", Some(new Invariant("x", ">", 5)))
+ta.addTransition("b", "c", None)
+ta.setInit("a")
+
+println(ta)
+
+val tcn = ta.toTCN()
+println(tcn)
+println("TCN is consistent: " + tcn.isConsistent())
+*/
+
 
 
 

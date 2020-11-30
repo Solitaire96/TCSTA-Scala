@@ -105,6 +105,7 @@ class TCN {
       val lower = edge.constr.get.lower
       val upper = edge.constr.get.upper
 
+
       dist += (source, dest) -> upper
       dist += (dest, source) -> -lower
     }

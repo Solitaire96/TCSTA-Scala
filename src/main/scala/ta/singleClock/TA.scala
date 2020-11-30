@@ -59,6 +59,9 @@ class TA extends ta.TA {
       tcn.addEvent(stateBegin)
       tcn.addEvent(stateEnd)
 
+      //println(state.inv)
+      //println(state.inv.isDefined)
+
       if(state.inv.isDefined) tcn.addEdge(stateBegin, stateEnd, state.inv.get.toConstraint(), true)
       else tcn.addEdge(stateBegin, stateEnd, new Constraint(0, Constraint.inf), true)
 
@@ -82,14 +85,23 @@ class TA extends ta.TA {
     // perform topological sorting of events
     val sort = tcn.topSort()
 
+    //println(sort)
+
     // gather the clock resets in topological order
     var clockResets = List[(String, Int)]()
     var currentReset = (tcn.init,0)
 
-    for(event <- sort; (label, state) <- this.states.toSeq) {
-      if (label + "-b" == event && state.reset.isDefined) currentReset = (event, state.reset.get)
+
+    for(event <- sort) {
+      val state = this.states(event.dropRight(2))
+      if (event == state.label + "-b" && state.reset.isDefined) currentReset = (event, state.reset.get)
       clockResets = currentReset :: clockResets
     }
+
+    clockResets = clockResets.reverse
+
+    //println(clockResets)
+    //println(clockResets.length)
 
     // replace constrained edges with adjusted constrained edges
 
@@ -110,6 +122,8 @@ class TA extends ta.TA {
       }
 
     }
+
+
 
     tcn
   }
