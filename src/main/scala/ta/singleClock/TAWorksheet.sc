@@ -69,10 +69,18 @@ val transGen = for(states <- stateGen;
   //yield(new State(loc.toString, invar, None))
 
 val numTrials = 5000
-val taSize = 12
+val taSize = 6
 var counter = 0
 
 var propertyHolds = true
+
+// next step -> add automata with multiple paths
+// research questions:
+// "diamond structure"
+// - move reset to transition instead of state
+// how to handle invariants?
+// can you enter a state where the invariant is false upon entering
+// this drastically simplifies multi-clock case
 
 val constrGen : Gen[Option[Invariant]] = for( pred <- Gen.oneOf("<", "<=", ">", ">=");
                                               const <- Gen.choose(1, 20))
